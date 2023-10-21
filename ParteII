@@ -1,0 +1,256 @@
+#define SEGMENTO_A 12
+#define SEGMENTO_B 13
+#define SEGMENTO_C 7
+#define SEGMENTO_D 8
+#define SEGMENTO_E 9
+#define SEGMENTO_F 11
+#define SEGMENTO_G 10
+
+#define BOTON_INCREMENTAR 4
+#define BOTON_DECREMENTAR 3
+#define INTERRUPTOR 5
+
+#define DISPLAY_UNIDAD A4 // pin nro. 18
+#define DISPLAY_DECENA A5 // pin nro. 19
+
+#define APAGAR_DISPLAYS 0
+#define TIEMPO_DELAY 10
+
+int contador = 0;
+
+int botonIncrementarEstadoActual = 1; 
+int botonIncremenatarEstadoPrevio = 1; 
+int botonDecrementarEstadoActual = 1; 
+int botonDecrementarEstadPrevio = 1; 
+int botonResetEstadoActual = 1;  
+int botonResetEstadoPrevio = 1; 
+
+int mostrarNumerosPrimos = 1;
+
+void setup()
+{
+ 
+  pinMode(BOTON_DECREMENTAR, INPUT_PULLUP);
+  pinMode(BOTON_INCREMENTAR, INPUT_PULLUP);
+  pinMode(INTERRUPTOR, INPUT_PULLUP);
+  
+  pinMode(SEGMENTO_A, OUTPUT);
+  pinMode(SEGMENTO_B, OUTPUT);
+  pinMode(SEGMENTO_C, OUTPUT);
+  pinMode(SEGMENTO_D, OUTPUT);
+  pinMode(SEGMENTO_E, OUTPUT);
+  pinMode(SEGMENTO_F, OUTPUT);
+  pinMode(SEGMENTO_G, OUTPUT);
+  
+  pinMode(DISPLAY_UNIDAD, OUTPUT);
+  pinMode(DISPLAY_DECENA, OUTPUT);
+}
+
+void loop()
+{
+  int pin_boton_presionado = get_pin_boton_presionado();
+  if(digitalRead(INTERRUPTOR) == mostrarNumerosPrimos){
+  	
+    if(pin_boton_presionado == BOTON_INCREMENTAR){  
+      contador++;
+      while (!esPrimo(contador)) {
+      	contador++;
+        if(contador > 99){
+        	contador = 2;
+        }
+      }
+    } else if(pin_boton_presionado == BOTON_DECREMENTAR) {
+      contador--;
+      while (!esPrimo(contador)) {
+      	contador--;
+        if(contador < 0 )
+        	contador = 97;
+      }
+    }
+  } else {
+    if(pin_boton_presionado == BOTON_INCREMENTAR){  
+      contador++;
+      if(contador > 99 )
+        contador = 0;
+    } else if(pin_boton_presionado == BOTON_DECREMENTAR) {
+      contador--;
+      if(contador < 0 )
+        contador = 99;
+    } 
+  }
+  imprimirValorActual(contador); 
+}
+
+// esta funcion retorna el pin del boton presionado según lo que corresponda
+// No recibe nada
+// Devuelve un entero que representa 0 o 1 
+int get_pin_boton_presionado(void) {
+    botonIncrementarEstadoActual = digitalRead(BOTON_INCREMENTAR);
+    botonDecrementarEstadoActual = digitalRead(BOTON_DECREMENTAR);
+    botonResetEstadoActual = digitalRead(INTERRUPTOR);
+
+    if(botonIncrementarEstadoActual == 1) 
+      botonIncremenatarEstadoPrevio = 1; 
+    if(botonDecrementarEstadoActual == 1)
+      botonDecrementarEstadPrevio = 1; 
+    if(botonResetEstadoActual == 1) 
+      botonResetEstadoPrevio = 1;
+     
+    if(botonIncrementarEstadoActual == 0 && botonIncrementarEstadoActual != botonIncremenatarEstadoPrevio) { 
+        botonIncremenatarEstadoPrevio = botonIncrementarEstadoActual; 
+        return BOTON_INCREMENTAR;
+    }
+    
+    if(botonDecrementarEstadoActual == 0 && botonDecrementarEstadoActual != botonDecrementarEstadPrevio) {
+      botonDecrementarEstadPrevio = botonDecrementarEstadoActual;
+      return BOTON_DECREMENTAR;
+    }
+
+    return 0; 
+}
+
+/*Calcula si un numero cumple si es primo o no
+recibe un numero
+devuelve un booleano
+*/
+bool esPrimo(int numero){
+    if(numero <= 1){
+        return false;
+    } else if (numero <= 3) {
+        return true;
+    } else if (numero == 5 or numero == 7) {
+        return true;
+    } else if (numero % 2 == 0) {
+        return false;
+    } else if (numero % 3 == 0 or numero % 5 == 0 or numero % 7 == 0) {
+        return false;
+    }
+  	return true;
+}
+
+/*
+Calcula el valor del digito para la decena y del digito para la unidad
+luego imprime el valor actual del contador
+Recibe un entero
+No devuelve nada
+*/
+void imprimirValorActual(int contadorValorActual) {
+    int decenaContadorValorActual = contadorValorActual / 10;
+    int unidadContadorValorActual = contadorValorActual - decenaContadorValorActual * 10;
+    encenderDisplay(APAGAR_DISPLAYS); 
+    encenderSegmentos(decenaContadorValorActual); 
+    encenderDisplay(DISPLAY_DECENA); 
+    encenderDisplay(APAGAR_DISPLAYS); 
+    encenderSegmentos(unidadContadorValorActual);
+    encenderDisplay(DISPLAY_UNIDAD); 
+}
+
+
+/*Prende o apaga un display
+Recibe un entero
+No devuelve nada
+*/
+
+void encenderDisplay(int nroPin){
+  if(nroPin == DISPLAY_UNIDAD) {
+  	digitalWrite(DISPLAY_UNIDAD, LOW);
+    digitalWrite(DISPLAY_DECENA, HIGH);
+    
+    delay(TIEMPO_DELAY);
+    
+  } else if(nroPin == DISPLAY_DECENA){
+  	digitalWrite(DISPLAY_UNIDAD, HIGH);
+    digitalWrite(DISPLAY_DECENA, LOW);
+    
+    delay(TIEMPO_DELAY);  
+    
+  } else {
+    digitalWrite(DISPLAY_UNIDAD, HIGH);
+    digitalWrite(DISPLAY_DECENA, HIGH);
+    delay(TIEMPO_DELAY);
+  }
+}
+
+/*
+Enciender los led correspondientes para interpretar un numero
+recibe un entero
+No retorna nada
+*/
+void encenderSegmentos(int numero){
+  digitalWrite(SEGMENTO_A, LOW);
+  digitalWrite(SEGMENTO_B, LOW);
+  digitalWrite(SEGMENTO_C, LOW);
+  digitalWrite(SEGMENTO_D, LOW);
+  digitalWrite(SEGMENTO_E, LOW);
+  digitalWrite(SEGMENTO_F, LOW);
+  digitalWrite(SEGMENTO_G, LOW);
+  switch(numero){
+  	case 1:
+        digitalWrite(SEGMENTO_B, HIGH);
+        digitalWrite(SEGMENTO_C, HIGH);
+    	break;	
+    case 2:
+        digitalWrite(SEGMENTO_A, HIGH);
+        digitalWrite(SEGMENTO_B, HIGH);
+        digitalWrite(SEGMENTO_D, HIGH);
+        digitalWrite(SEGMENTO_E, HIGH);
+        digitalWrite(SEGMENTO_G, HIGH);
+    	break;	
+    case 3:
+        digitalWrite(SEGMENTO_A, HIGH);
+        digitalWrite(SEGMENTO_B, HIGH);
+        digitalWrite(SEGMENTO_C, HIGH);
+        digitalWrite(SEGMENTO_D, HIGH);
+        digitalWrite(SEGMENTO_G, HIGH);
+    	break;	
+    case 4:
+        digitalWrite(SEGMENTO_B, HIGH);
+        digitalWrite(SEGMENTO_C, HIGH);
+        digitalWrite(SEGMENTO_F, HIGH);
+        digitalWrite(SEGMENTO_G, HIGH);
+    	break;	
+    case 5:
+        digitalWrite(SEGMENTO_A, HIGH);
+        digitalWrite(SEGMENTO_C, HIGH);
+        digitalWrite(SEGMENTO_D, HIGH);
+        digitalWrite(SEGMENTO_F, HIGH);
+        digitalWrite(SEGMENTO_G, HIGH);
+    	break;	
+    case 6:
+        digitalWrite(SEGMENTO_C, HIGH);
+        digitalWrite(SEGMENTO_D, HIGH);
+        digitalWrite(SEGMENTO_E, HIGH);
+        digitalWrite(SEGMENTO_F, HIGH);
+        digitalWrite(SEGMENTO_G, HIGH);
+    	break;	
+    case 7:
+        digitalWrite(SEGMENTO_A, HIGH);
+        digitalWrite(SEGMENTO_B, HIGH);
+        digitalWrite(SEGMENTO_C, HIGH);
+    	break;	
+    case 8:
+        digitalWrite(SEGMENTO_A, HIGH);
+        digitalWrite(SEGMENTO_B, HIGH);
+        digitalWrite(SEGMENTO_C, HIGH);
+        digitalWrite(SEGMENTO_D, HIGH);
+        digitalWrite(SEGMENTO_E, HIGH);
+        digitalWrite(SEGMENTO_F, HIGH);
+        digitalWrite(SEGMENTO_G, HIGH);
+    	break;	
+    case 9:
+        digitalWrite(SEGMENTO_A, HIGH);
+        digitalWrite(SEGMENTO_B, HIGH);
+        digitalWrite(SEGMENTO_C, HIGH);
+        digitalWrite(SEGMENTO_F, HIGH);
+        digitalWrite(SEGMENTO_G, HIGH);
+    	break;	
+    default:
+        digitalWrite(SEGMENTO_A, HIGH);
+        digitalWrite(SEGMENTO_B, HIGH);
+        digitalWrite(SEGMENTO_C, HIGH);
+        digitalWrite(SEGMENTO_D, HIGH);
+        digitalWrite(SEGMENTO_E, HIGH);
+        digitalWrite(SEGMENTO_F, HIGH);
+    	break;	
+  }
+}
